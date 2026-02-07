@@ -1,0 +1,94 @@
+name: "Concept Note"
+description: "Has-Needs protocol concept documentation"
+folder: "01_Protocol_&_Technical/Key_Concept_Notes"
+
+frontmatter:
+  concept: ""
+  status: ""
+  origin: ""
+  related_concepts: []
+  related_domains: []
+  created: "{{date}}"
+
+sections:
+  - name: "Core Idea"
+    description: "Clear 2-3 sentence explanation"
+  - name: "Key Points"
+    description: "3-5 bullet points capturing essence"
+  - name: "Design Implications"
+    description: "Focus on sovereignty and user-first principles"
+  - name: "Implementation Notes"
+    description: "Technical and actionable details"
+  - name: "Examples"
+    description: "Concrete, relatable scenarios"
+
+interview:
+  opening: |
+    I'll help you create a structured concept note that can be easily compared
+    with others and provide context for future AI assistance.
+
+    What will this note be about?
+
+  flow:
+    - stage: "concept_understanding"
+      purpose: "Refine the core concept into a clear statement"
+      questions:
+        - "Tell me about this idea."
+        - "How would you explain this to someone unfamiliar with it?"
+        - "What's the single most important thing to understand about this?"
+      reflection: "So if I understand correctly, this is about [concept]?"
+      field: "concept"
+
+    - stage: "status_assessment"
+      purpose: "Understand development stage"
+      question: "Is this idea in production? A prototype? Published? Still in draft form?"
+      field: "status"
+      mapping:
+        "production|live|deployed": "production"
+        "prototype|testing|experimental": "prototype"
+        "published|public": "published"
+        "draft|early|initial": "draft"
+
+    - stage: "origin_identification"
+      purpose: "Determine if original or derivative"
+      question: "Is this your original idea, or is it based on someone else's work?"
+      field: "origin"
+      mapping:
+        "mine|my|original|created": "original"
+        "based|derivative|inspired|adaptation": "derivative"
+
+    - stage: "domain_suggestion"
+      purpose: "Identify related domains"
+      approach: |
+        Based on the concept, suggest 3-4 related domains. Ask:
+        "This seems related to [domain1], [domain2], and [domain3].
+        Does that sound right, or are there other domains I should consider?"
+      field: "related_domains"
+
+    - stage: "deep_dive"
+      purpose: "Fill out sections through conversation"
+      approach: |
+        **Adaptive questioning based on expertise:**
+
+        If expert (detailed, specific responses):
+        - Use reflective questions: "You mentioned X, how does that connect to Y?"
+        - Draw out implications: "What does that mean for Z?"
+        - Use metaphor to confirm: "Is this like [metaphor]?"
+        - Give space: "What else should I understand about this?"
+
+        If exploring (uncertainty, "not sure" responses):
+        - Offer scaffolding: "Would it be helpful if I suggested a few possibilities?"
+        - Present options: "This could be about A, B, or C. Do any resonate?"
+        - Encourage editing: "Here's a rough draft - what would you change?"
+        - Normalize uncertainty: "That's a great question to explore. Let's think through it together."
+
+      sections_to_fill:
+        - "Core Idea": "Let's distill this into 2-3 clear sentences. What's the essence?"
+        - "Key Points": "What are the 3-5 most important things to know?"
+        - "Design Implications": "How does this align with sovereign-first principles?"
+        - "Implementation Notes": "What would someone need to know to build this?"
+        - "Examples": "Can you give me a concrete example of this in action?"
+
+  closing: |
+    Let me show you what I've captured. I'll create a note with these sections filled in.
+    You can always ask me to adjust, expand, or clarify any part.

@@ -1,0 +1,11 @@
+{
+  "mySetting": "default",
+  "brainstormFolder": "Brainstorms",
+  "aiProvider": "anthropic",
+  "anthropicApiKey": "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",
+  "anthropicModel": "claude-3-5-haiku-20241022",
+  "openaiApiKey": "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",
+  "openaiModel": "gpt-4o-mini",
+  "perplexityApiKey": "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",
+  "perplexityModel": "sonar-pro"
+}

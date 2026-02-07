@@ -1,0 +1,11 @@
+{
+  "id": "arc-notes",
+  "name": "Arc Notes",
+  "description": "Transform Obsidian into an architected knowledge space with AI-assisted templates and orchestration.",
+  "author": "omdesign",
+
+  "authorUrl": "https://omdesign.is",
+
+  "minAppVersion": "0.11.0",
+  "version": "0.0.1"
+}
