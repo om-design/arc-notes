@@ -7445,7 +7445,7 @@ __export(main_exports, {
   default: () => ArcNotes
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian7 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 
 // src/vaultTools.ts
 var import_obsidian = require("obsidian");
@@ -7750,8 +7750,76 @@ var PerplexityProvider = class {
   }
 };
 
-// src/ai/OpenAIProvider.ts
+// src/ai/OllamaProvider.ts
 var import_obsidian3 = require("obsidian");
+var OllamaProvider = class {
+  constructor(model, baseUrl = "http://localhost:11434") {
+    this.name = "Ollama";
+    this.model = model;
+    this.baseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  }
+  chat(messages, tools) {
+    return __async(this, null, function* () {
+      var _a;
+      const payload = {
+        model: this.model,
+        messages,
+        stream: false
+        // Ensure we get the full response at once
+      };
+      if (tools && tools.length > 0) {
+        payload.tools = tools;
+        payload.format = "json";
+      }
+      console.log("[OllamaProvider] Request:", {
+        model: this.model,
+        messageCount: messages.length,
+        toolCount: (tools == null ? void 0 : tools.length) || 0
+      });
+      let response;
+      try {
+        response = yield (0, import_obsidian3.requestUrl)({
+          url: `${this.baseUrl}/api/chat`,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (error) {
+        console.error("[OllamaProvider] Request failed:", error);
+        if (error.message.includes("Failed to fetch")) {
+          throw new Error(`Ollama request failed. Is the Ollama server running at ${this.baseUrl}?`);
+        }
+        throw new Error(`Ollama API request failed: ${error.message}`);
+      }
+      console.log("[OllamaProvider] Response status:", response.status);
+      if (response.status !== 200) {
+        console.error("[OllamaProvider] Error response:", response.text);
+        throw new Error(`Ollama API error: ${response.status} ${response.text}`);
+      }
+      const data = response.json;
+      const message = payload.format === "json" && typeof data.message.content === "string" ? JSON.parse(data.message.content) : data.message;
+      console.log("[OllamaProvider] Response:", {
+        hasMessage: !!message,
+        toolCallCount: ((_a = message == null ? void 0 : message.tool_calls) == null ? void 0 : _a.length) || 0
+      });
+      return {
+        content: message.content,
+        model: this.model,
+        tool_calls: message.tool_calls,
+        usage: {
+          input_tokens: data.prompt_eval_count,
+          output_tokens: data.eval_count
+        },
+        stop_reason: data.done_reason
+      };
+    });
+  }
+};
+
+// src/ai/OpenAIProvider.ts
+var import_obsidian4 = require("obsidian");
 var OpenAIProvider = class {
   constructor(apiKey, model = "gpt-4o-mini") {
     this.name = "OpenAI";
@@ -7778,7 +7846,7 @@ var OpenAIProvider = class {
       });
       let response;
       try {
-        response = yield (0, import_obsidian3.requestUrl)({
+        response = yield (0, import_obsidian4.requestUrl)({
           url: `${this.baseUrl}/chat/completions`,
           method: "POST",
           headers: {
@@ -7812,7 +7880,7 @@ var OpenAIProvider = class {
 };
 
 // src/ai/AnthropicProvider.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 var AnthropicProvider = class {
   constructor(apiKey, model = "claude-3-5-sonnet-20241022") {
     this.name = "Anthropic";
@@ -7949,7 +8017,7 @@ var AnthropicProvider = class {
             console.log(`[AnthropicProvider] Retrying after ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
             yield new Promise((resolve) => setTimeout(resolve, delay));
           }
-          response = yield (0, import_obsidian4.requestUrl)({
+          response = yield (0, import_obsidian5.requestUrl)({
             url: `${this.baseUrl}/messages`,
             method: "POST",
             headers: {
@@ -8149,7 +8217,7 @@ var ToolExecutor = class {
 };
 
 // src/vault/VaultManager.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 var VaultManager = class {
   constructor(app) {
     this.app = app;
@@ -8182,7 +8250,7 @@ var VaultManager = class {
   searchVault(query) {
     return __async(this, null, function* () {
       const files = this.app.vault.getMarkdownFiles();
-      const search = (0, import_obsidian5.prepareFuzzySearch)(query);
+      const search = (0, import_obsidian6.prepareFuzzySearch)(query);
       const results = [];
       for (const file of files) {
         const result = search(file.path);
@@ -8202,7 +8270,7 @@ var VaultManager = class {
   readFile(path) {
     return __async(this, null, function* () {
       const file = this.app.vault.getAbstractFileByPath(path);
-      if (file instanceof import_obsidian5.TFile) {
+      if (file instanceof import_obsidian6.TFile) {
         return yield this.app.vault.read(file);
       }
       return null;
@@ -8214,7 +8282,7 @@ var VaultManager = class {
   getNoteOutline(path) {
     return __async(this, null, function* () {
       const file = this.app.vault.getAbstractFileByPath(path);
-      if (!(file instanceof import_obsidian5.TFile)) return null;
+      if (!(file instanceof import_obsidian6.TFile)) return null;
       const cache = this.app.metadataCache.getFileCache(file);
       const sections = [];
       const headingCounts = {};
@@ -8241,7 +8309,7 @@ var VaultManager = class {
   readNeighborNotes(path) {
     return __async(this, null, function* () {
       const file = this.app.vault.getAbstractFileByPath(path);
-      if (!(file instanceof import_obsidian5.TFile)) return [];
+      if (!(file instanceof import_obsidian6.TFile)) return [];
       const neighbors = /* @__PURE__ */ new Set();
       const cache = this.app.metadataCache.getFileCache(file);
       if (cache == null ? void 0 : cache.links) {
@@ -8256,7 +8324,7 @@ var VaultManager = class {
       const results = [];
       for (const nPath of Array.from(neighbors).slice(0, 5)) {
         const nFile = this.app.vault.getAbstractFileByPath(nPath);
-        if (nFile instanceof import_obsidian5.TFile) {
+        if (nFile instanceof import_obsidian6.TFile) {
           const content = yield this.app.vault.read(nFile);
           results.push({
             path: nPath,
@@ -8362,7 +8430,7 @@ var VaultManager = class {
   patchSection(path, section, content) {
     return __async(this, null, function* () {
       const file = this.app.vault.getAbstractFileByPath(path);
-      if (!(file instanceof import_obsidian5.TFile)) return false;
+      if (!(file instanceof import_obsidian6.TFile)) return false;
       const fileContent = yield this.app.vault.read(file);
       const lines = fileContent.split("\n");
       const headerRegex = new RegExp(`^#+\\s+${section.heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i");
@@ -8543,9 +8611,9 @@ var VAULT_TOOLS = [
 ];
 
 // src/ui/ChatView.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 var CHAT_VIEW_TYPE = "arc-notes-chat-view";
-var ChatView = class extends import_obsidian6.ItemView {
+var ChatView = class extends import_obsidian7.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.currentContext = null;
@@ -8624,7 +8692,7 @@ var ChatView = class extends import_obsidian6.ItemView {
         cls: "arc-notes-message arc-notes-user-message"
       });
       const contentEl = messageEl.createDiv({ cls: "arc-notes-message-content" });
-      yield import_obsidian6.MarkdownRenderer.render(this.app, content, contentEl, "", this);
+      yield import_obsidian7.MarkdownRenderer.render(this.app, content, contentEl, "", this);
       this.scrollToBottom();
     });
   }
@@ -8639,7 +8707,7 @@ var ChatView = class extends import_obsidian6.ItemView {
         cls: "arc-notes-message arc-notes-assistant-message"
       });
       const contentEl = messageEl.createDiv({ cls: "arc-notes-message-content" });
-      yield import_obsidian6.MarkdownRenderer.render(this.app, content, contentEl, "", this);
+      yield import_obsidian7.MarkdownRenderer.render(this.app, content, contentEl, "", this);
       this.scrollToBottom();
       return contentEl;
     });
@@ -8650,7 +8718,7 @@ var ChatView = class extends import_obsidian6.ItemView {
         cls: "arc-notes-message arc-notes-system-message"
       });
       const contentEl = messageEl.createDiv({ cls: "arc-notes-message-content" });
-      yield import_obsidian6.MarkdownRenderer.render(this.app, content, contentEl, "", this);
+      yield import_obsidian7.MarkdownRenderer.render(this.app, content, contentEl, "", this);
       this.scrollToBottom();
     });
   }
@@ -8704,21 +8772,35 @@ var ChatView = class extends import_obsidian6.ItemView {
 };
 
 // src/templates/TemplateManager.ts
+var import_obsidian8 = require("obsidian");
 var yaml = __toESM(require_dist());
 var TemplateManager = class {
   constructor(app, pluginDir) {
     this.app = app;
     this.pluginDir = pluginDir;
     this.templates = /* @__PURE__ */ new Map();
+    this.globalInstructions = "";
   }
   loadTemplates() {
     return __async(this, null, function* () {
       const templatesDir = `${this.pluginDir}/templates`;
       try {
-        const templates = this.app.vault.getFiles().filter(
+        const globalPromptPath = `${templatesDir}/global-interview-prompt.md`;
+        try {
+          const globalPromptFile = this.app.vault.getAbstractFileByPath(globalPromptPath);
+          if (globalPromptFile instanceof import_obsidian8.TFile) {
+            this.globalInstructions = yield this.app.vault.read(globalPromptFile);
+            console.log(`[TemplateManager] Loaded global interview prompt.`);
+          } else {
+            console.error(`[TemplateManager] Global prompt file not found at ${globalPromptPath}`);
+          }
+        } catch (error) {
+          console.error(`[TemplateManager] Failed to load global prompt:`, error);
+        }
+        const templateFiles = this.app.vault.getFiles().filter(
           (f) => f.path.startsWith(templatesDir) && f.path.endsWith(".yaml")
         );
-        for (const templateFile of templates) {
+        for (const templateFile of templateFiles) {
           try {
             const content = yield this.app.vault.read(templateFile);
             const parsed = yaml.parse(content);
@@ -8755,10 +8837,11 @@ I'll guide you through creating this note with a conversation. Ready to begin?`;
   getInterviewSystemPrompt(template) {
     return `You are conducting a conversational interview to create a structured note.
 
-Template: ${template.name}
-${template.description}
+${this.globalInstructions}
 
-${template.ai_instructions}
+# Template Context:
+Template Name: ${template.name}
+Description: ${template.description}
 
 # Interview Flow:
 
@@ -8822,19 +8905,120 @@ When you have enough information, say "Let me create the note" and generate the 
   }
 };
 
+// src/intake/PdfIntake.ts
+var import_obsidian9 = require("obsidian");
+var OUTPUT_FOLDER = "02_Theoretical_Proofs";
+var MAX_TEXT_LENGTH = 6e3;
+function buildIntakePrompt(filename, text) {
+  return `You are creating a structured research note for the Has-Needs project \u2014 a distributed sovereign data platform for disaster resilience and peer coordination.
+
+Source document: ${filename}
+
+Extracted text:
+${text}
+
+Create a structured markdown note with these sections:
+
+## Summary
+2-3 sentence overview of the document's main argument or contribution.
+
+## Key Findings
+- Bullet list of the most important findings, data points, or claims (4-8 bullets)
+
+## Relevant to Has-Needs
+- Quote or closely paraphrase what this document explicitly says about community needs, coordination, resilience, trust, or prosocial behavior. Do NOT speculate or suggest design changes. Only report what the document actually says.
+
+## Citation
+Full citation for this document (author, title, year if found in text).
+
+Output only the markdown note content. No preamble.`;
+}
+function extractPdfText(app, file) {
+  return __async(this, null, function* () {
+    const pdfjsLib = window["pdfjs-dist/build/pdf"] || window.pdfjsLib;
+    if (!pdfjsLib) {
+      throw new Error("PDF.js not available \u2014 try opening the PDF in Obsidian's PDF viewer first");
+    }
+    const arrayBuffer = yield app.vault.readBinary(file);
+    const pdf = yield pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = yield pdf.getPage(i);
+      const content = yield page.getTextContent();
+      text += content.items.map((item) => item.str).join(" ") + "\n";
+    }
+    return text.slice(0, MAX_TEXT_LENGTH);
+  });
+}
+function callOllama(baseUrl, model, prompt) {
+  return __async(this, null, function* () {
+    const url = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    const response = yield (0, import_obsidian9.requestUrl)({
+      url: `${url}/api/generate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false
+      })
+    });
+    return response.json.response;
+  });
+}
+function intakePdf(app, file, ollamaBaseUrl, ollamaModel) {
+  return __async(this, null, function* () {
+    try {
+      new import_obsidian9.Notice("Extracting PDF text\u2026");
+      const text = yield extractPdfText(app, file);
+      new import_obsidian9.Notice("Running Ollama analysis\u2026");
+      const prompt = buildIntakePrompt(file.name, text);
+      const analysis = yield callOllama(ollamaBaseUrl, ollamaModel, prompt);
+      new import_obsidian9.Notice("Creating note\u2026");
+      const stem = file.basename;
+      const outputPath = `${OUTPUT_FOLDER}/${stem}.md`;
+      const existing = app.vault.getAbstractFileByPath(outputPath);
+      if (existing) {
+        new import_obsidian9.Notice(`File already exists: ${outputPath} \u2014 aborting`);
+        return;
+      }
+      if (!app.vault.getAbstractFileByPath(OUTPUT_FOLDER)) {
+        yield app.vault.createFolder(OUTPUT_FOLDER);
+      }
+      const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      const content = `---
+source_pdf: "${file.path}"
+intake_date: "${today}"
+tags: [theoretical-proof, arc-notes-intake]
+---
+
+${analysis}
+`;
+      const newFile = yield app.vault.create(outputPath, content);
+      yield app.workspace.openLinkText(outputPath, "", true);
+      new import_obsidian9.Notice(`Done \u2192 ${outputPath}`);
+    } catch (err) {
+      console.error("[Arc Notes] PDF intake failed:", err);
+      new import_obsidian9.Notice(`PDF intake error: ${err.message}`);
+    }
+  });
+}
+
 // src/main.ts
 var DEFAULT_SETTINGS = {
   mySetting: "default",
   brainstormFolder: "Brainstorms",
   aiProvider: "anthropic",
   anthropicApiKey: "",
-  anthropicModel: "claude-3-5-sonnet-20241022",
+  anthropicModel: "claude-3-5-sonnet-20240620",
   openaiApiKey: "",
   openaiModel: "gpt-4o-mini",
   perplexityApiKey: "",
-  perplexityModel: "sonar-pro"
+  perplexityModel: "llama-3-sonar-large-32k-online",
+  ollamaModel: "llama3",
+  ollamaBaseUrl: "http://localhost:11434"
 };
-var ArcNotes = class extends import_obsidian7.Plugin {
+var ArcNotes = class extends import_obsidian10.Plugin {
   onload() {
     return __async(this, null, function* () {
       console.log("loading Arc Notes");
@@ -8889,6 +9073,25 @@ var ArcNotes = class extends import_obsidian7.Plugin {
           yield this.startTemplateInterview("Concept Note");
         })
       });
+      this.addCommand({
+        id: "arc-notes-intake-pdf",
+        name: "Intake PDF \u2192 Theoretical Proof",
+        checkCallback: (checking) => {
+          const file = this.app.workspace.getActiveFile();
+          if (file && file.extension === "pdf") {
+            if (!checking) {
+              intakePdf(
+                this.app,
+                file,
+                this.settings.ollamaBaseUrl,
+                this.settings.ollamaModel
+              );
+            }
+            return true;
+          }
+          return false;
+        }
+      });
       this.addSettingTab(new ArcNotesSettingTab(this.app, this));
       this.registerEvent(
         this.app.workspace.on("editor-menu", (menu, editor, view) => {
@@ -8918,6 +9121,11 @@ var ArcNotes = class extends import_obsidian7.Plugin {
       return new OpenAIProvider(
         this.settings.openaiApiKey,
         this.settings.openaiModel
+      );
+    } else if (this.settings.aiProvider === "ollama") {
+      return new OllamaProvider(
+        this.settings.ollamaModel,
+        this.settings.ollamaBaseUrl
       );
     } else {
       return new PerplexityProvider(
@@ -8952,7 +9160,7 @@ var ArcNotes = class extends import_obsidian7.Plugin {
     return __async(this, null, function* () {
       const template = this.templateManager.getTemplate(templateName);
       if (!template) {
-        new import_obsidian7.Notice(`Template "${templateName}" not found`);
+        new import_obsidian10.Notice(`Template "${templateName}" not found`);
         return;
       }
       yield this.activateChatView();
@@ -9176,7 +9384,7 @@ ${h.snippet}`).join("\n\n");
         "Concept name"
       );
       if (!conceptName) {
-        new import_obsidian7.Notice("Brainstorm note creation cancelled");
+        new import_obsidian10.Notice("Brainstorm note creation cancelled");
         return;
       }
       const fileName = `${conceptName}.md`;
@@ -9213,22 +9421,22 @@ created: ${today}
       try {
         file = yield vault.create(filePath, content);
       } catch (e) {
-        new import_obsidian7.Notice(`Failed to create note: ${filePath}`);
+        new import_obsidian10.Notice(`Failed to create note: ${filePath}`);
         console.error(e);
         return;
       }
       const leaf = workspace.getLeaf(true);
       yield leaf.openFile(file);
-      new import_obsidian7.Notice(`Created Brainstorm note: ${filePath}`);
+      new import_obsidian10.Notice(`Created Brainstorm note: ${filePath}`);
     });
   }
   testPerplexity() {
     return __async(this, null, function* () {
       if (!this.settings.perplexityApiKey) {
-        new import_obsidian7.Notice("Please set your Perplexity API key in settings first");
+        new import_obsidian10.Notice("Please set your Perplexity API key in settings first");
         return;
       }
-      new import_obsidian7.Notice("Testing Perplexity connection...");
+      new import_obsidian10.Notice("Testing Perplexity connection...");
       try {
         const client = new PerplexityClient(this.settings.perplexityApiKey, this.settings.perplexityModel);
         const payload = {
@@ -9236,15 +9444,15 @@ created: ${today}
           filePath: "test.md"
         };
         const response = yield client.runGeneralTool("Say 'Hello!'", payload);
-        new import_obsidian7.Notice(`\u2713 Perplexity connected! Action: ${response.action}`);
+        new import_obsidian10.Notice(`\u2713 Perplexity connected! Action: ${response.action}`);
       } catch (error) {
-        new import_obsidian7.Notice(`\u2717 Perplexity error: ${error.message}`);
+        new import_obsidian10.Notice(`\u2717 Perplexity error: ${error.message}`);
         console.error("Perplexity test failed:", error);
       }
     });
   }
 };
-var InputPromptModal = class extends import_obsidian7.Modal {
+var InputPromptModal = class extends import_obsidian10.Modal {
   constructor(app, promptText, onSubmit) {
     super(app);
     this.inputValue = "";
@@ -9294,7 +9502,7 @@ function promptForInput(app, title, placeholder) {
     modal.open();
   });
 }
-var ArcNotesSettingTab = class extends import_obsidian7.PluginSettingTab {
+var ArcNotesSettingTab = class extends import_obsidian10.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -9304,8 +9512,8 @@ var ArcNotesSettingTab = class extends import_obsidian7.PluginSettingTab {
     containerEl.empty();
     containerEl.createEl("h2", { text: "Arc Notes Settings" });
     containerEl.createEl("h3", { text: "AI Provider" });
-    new import_obsidian7.Setting(containerEl).setName("Provider").setDesc("Choose which AI provider to use (Anthropic/OpenAI support tool calling)").addDropdown(
-      (dropdown) => dropdown.addOption("anthropic", "Anthropic Claude (Recommended)").addOption("openai", "OpenAI").addOption("perplexity", "Perplexity").setValue(this.plugin.settings.aiProvider).onChange((value) => __async(this, null, function* () {
+    new import_obsidian10.Setting(containerEl).setName("Provider").setDesc("Choose which AI provider to use").addDropdown(
+      (dropdown) => dropdown.addOption("anthropic", "Anthropic Claude").addOption("openai", "OpenAI").addOption("ollama", "Ollama (Local)").addOption("perplexity", "Perplexity").setValue(this.plugin.settings.aiProvider).onChange((value) => __async(this, null, function* () {
         this.plugin.settings.aiProvider = value;
         yield this.plugin.saveSettings();
         this.display();
@@ -9313,14 +9521,15 @@ var ArcNotesSettingTab = class extends import_obsidian7.PluginSettingTab {
     );
     if (this.plugin.settings.aiProvider === "anthropic") {
       containerEl.createEl("h4", { text: "Anthropic Claude Configuration" });
-      new import_obsidian7.Setting(containerEl).setName("Anthropic API Key").setDesc("Your Anthropic API key from https://console.anthropic.com/settings/keys").addText(
+      containerEl.createEl("p", { text: "Recommended for balanced cost and high capability with tool use.", cls: "setting-item-description" });
+      new import_obsidian10.Setting(containerEl).setName("Anthropic API Key").setDesc("Your Anthropic API key").addText(
         (text) => text.setPlaceholder("sk-ant-api03-...").setValue(this.plugin.settings.anthropicApiKey || "").onChange((value) => __async(this, null, function* () {
           this.plugin.settings.anthropicApiKey = value.trim();
           yield this.plugin.saveSettings();
         }))
       );
-      new import_obsidian7.Setting(containerEl).setName("Claude Model").setDesc("Choose the Claude model to use").addDropdown(
-        (dropdown) => dropdown.addOption("claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet (Recommended)").addOption("claude-3-5-haiku-20241022", "Claude 3.5 Haiku (Fast & Cheap)").addOption("claude-3-opus-20240229", "Claude 3 Opus (Most Capable)").setValue(this.plugin.settings.anthropicModel).onChange((value) => __async(this, null, function* () {
+      new import_obsidian10.Setting(containerEl).setName("Claude Model").addDropdown(
+        (dropdown) => dropdown.addOption("claude-3-5-sonnet-20240620", "Claude 3.5 Sonnet (Recommended)").addOption("claude-3-haiku-20240307", "Claude 3 Haiku (Fast & Cheap)").addOption("claude-3-opus-20240229", "Claude 3 Opus (Most Capable)").setValue(this.plugin.settings.anthropicModel).onChange((value) => __async(this, null, function* () {
           this.plugin.settings.anthropicModel = value;
           yield this.plugin.saveSettings();
         }))
@@ -9328,15 +9537,34 @@ var ArcNotesSettingTab = class extends import_obsidian7.PluginSettingTab {
     }
     if (this.plugin.settings.aiProvider === "openai") {
       containerEl.createEl("h4", { text: "OpenAI Configuration" });
-      new import_obsidian7.Setting(containerEl).setName("OpenAI API Key").setDesc("Your OpenAI API key from https://platform.openai.com/api-keys").addText(
+      new import_obsidian10.Setting(containerEl).setName("OpenAI API Key").setDesc("Your OpenAI API key").addText(
         (text) => text.setPlaceholder("sk-...").setValue(this.plugin.settings.openaiApiKey || "").onChange((value) => __async(this, null, function* () {
           this.plugin.settings.openaiApiKey = value.trim();
           yield this.plugin.saveSettings();
         }))
       );
-      new import_obsidian7.Setting(containerEl).setName("OpenAI Model").setDesc("Choose the OpenAI model to use").addDropdown(
+      new import_obsidian10.Setting(containerEl).setName("OpenAI Model").addDropdown(
         (dropdown) => dropdown.addOption("gpt-4o-mini", "GPT-4o Mini (Fast & Cheap)").addOption("gpt-4o", "GPT-4o (Most Capable)").addOption("gpt-4-turbo", "GPT-4 Turbo").setValue(this.plugin.settings.openaiModel).onChange((value) => __async(this, null, function* () {
           this.plugin.settings.openaiModel = value;
+          yield this.plugin.saveSettings();
+        }))
+      );
+    }
+    if (this.plugin.settings.aiProvider === "ollama") {
+      containerEl.createEl("h4", { text: "Ollama Configuration" });
+      containerEl.createEl("p", {
+        text: "Run LLMs locally for free. Requires installing Ollama and downloading a model. Supports tool calling.",
+        cls: "setting-item-description"
+      });
+      new import_obsidian10.Setting(containerEl).setName("Ollama Model").setDesc("The name of the model you have downloaded in Ollama (e.g., 'llama3', 'phi3:medium').").addText(
+        (text) => text.setPlaceholder("llama3").setValue(this.plugin.settings.ollamaModel || "").onChange((value) => __async(this, null, function* () {
+          this.plugin.settings.ollamaModel = value.trim();
+          yield this.plugin.saveSettings();
+        }))
+      );
+      new import_obsidian10.Setting(containerEl).setName("Ollama Base URL").setDesc("The URL of your Ollama server.").addText(
+        (text) => text.setPlaceholder("http://localhost:11434").setValue(this.plugin.settings.ollamaBaseUrl || "").onChange((value) => __async(this, null, function* () {
+          this.plugin.settings.ollamaBaseUrl = value.trim();
           yield this.plugin.saveSettings();
         }))
       );
@@ -9347,21 +9575,21 @@ var ArcNotesSettingTab = class extends import_obsidian7.PluginSettingTab {
         text: "\u26A0\uFE0F Note: Perplexity models do not support tool calling. Chat will work but cannot access vault files.",
         cls: "setting-item-description"
       });
-      new import_obsidian7.Setting(containerEl).setName("Perplexity API Key").setDesc("Your Perplexity API key from https://www.perplexity.ai/settings/api").addText(
+      new import_obsidian10.Setting(containerEl).setName("Perplexity API Key").setDesc("Your Perplexity API key").addText(
         (text) => text.setPlaceholder("pplx-...").setValue(this.plugin.settings.perplexityApiKey || "").onChange((value) => __async(this, null, function* () {
           this.plugin.settings.perplexityApiKey = value.trim();
           yield this.plugin.saveSettings();
         }))
       );
-      new import_obsidian7.Setting(containerEl).setName("Perplexity Model").setDesc("Choose the Perplexity model to use").addDropdown(
-        (dropdown) => dropdown.addOption("sonar", "Sonar (Fast & Cheap)").addOption("sonar-pro", "Sonar Pro (Higher Quality)").addOption("sonar-reasoning-pro", "Sonar Reasoning Pro (With Traces)").addOption("sonar-deep-research", "Sonar Deep Research (Long-form)").setValue(this.plugin.settings.perplexityModel).onChange((value) => __async(this, null, function* () {
+      new import_obsidian10.Setting(containerEl).setName("Perplexity Model").addDropdown(
+        (dropdown) => dropdown.addOption("llama-3-sonar-large-32k-online", "Sonar Online (Recommended)").addOption("llama-3-sonar-large-32k-chat", "Sonar Chat").setValue(this.plugin.settings.perplexityModel).onChange((value) => __async(this, null, function* () {
           this.plugin.settings.perplexityModel = value;
           yield this.plugin.saveSettings();
         }))
       );
     }
     containerEl.createEl("h3", { text: "Templates" });
-    new import_obsidian7.Setting(containerEl).setName("Brainstorm folder").setDesc("Folder where Brainstorm notes will be created (e.g. Concepts/Brainstorms). Leave empty for vault root.").addText(
+    new import_obsidian10.Setting(containerEl).setName("Brainstorm folder").setDesc("Folder where Brainstorm notes will be created (e.g. Concepts/Brainstorms). Leave empty for vault root.").addText(
       (text) => text.setPlaceholder("Brainstorms").setValue(this.plugin.settings.brainstormFolder || "").onChange((value) => __async(this, null, function* () {
         this.plugin.settings.brainstormFolder = value.trim();
         yield this.plugin.saveSettings();

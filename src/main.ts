@@ -20,6 +20,7 @@ import { GeneralResponse, Message, AIProvider } from "./ai/types";
 import { ChatView, CHAT_VIEW_TYPE } from "./ui/ChatView";
 import { TemplateManager } from "./templates/TemplateManager";
 import { TENSEGRITY_CHAT_ICON_COMPACT } from "./ui/tensegrity-icon";
+import { intakePdf } from "./intake/PdfIntake";
 
 interface ArcNotesSettings {
   mySetting: string;
@@ -119,6 +120,26 @@ export default class ArcNotes extends Plugin {
       name: "Create Concept Note (Guided Interview)",
       callback: async () => {
         await this.startTemplateInterview("Concept Note");
+      },
+    });
+
+    this.addCommand({
+      id: "arc-notes-intake-pdf",
+      name: "Intake PDF → Theoretical Proof",
+      checkCallback: (checking: boolean) => {
+        const file = this.app.workspace.getActiveFile();
+        if (file && file.extension === "pdf") {
+          if (!checking) {
+            intakePdf(
+              this.app,
+              file,
+              this.settings.ollamaBaseUrl,
+              this.settings.ollamaModel
+            );
+          }
+          return true;
+        }
+        return false;
       },
     });
 
